@@ -157,14 +157,7 @@ export function DemoControls() {
 
   return (
     <section className="rounded-xl border border-dashed border-line bg-transparent p-4">
-      <p className="text-[11px] font-medium tracking-[0.1em] text-muted-foreground uppercase">
-        Demo tools
-      </p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Manufacture a failed payment, force the retry cron to run, or mark the retry as recovered.
-      </p>
-
-      <div className="mt-3 flex flex-wrap items-end gap-2">
+      <div className="flex flex-wrap items-end gap-2">
         <label className="flex flex-col gap-1 text-xs text-muted-foreground">
           Subscription
           <select
