@@ -1,11 +1,24 @@
 # Recoverly
 
 **Live Demo:** [recoverly-seven.vercel.app](https://recoverly-seven.vercel.app)  
+**Demo Credentials:** `demo@recoverly.app` / `recoverly-demo`
 AI-powered revenue recovery for Razorpay merchants. Built for the Razorpay Buildathon (Track 3: AI Revenue Recovery).
 
 ## What it does
 
-When a subscription payment fails on Razorpay, Recoverly reads *why* it failed, schedules a smarter retry based on that reason, executes the retry automatically, and shows the merchant a live dashboard of recovered revenue and a cashflow forecast.
+Razorpay's default behavior retries a failed payment on a fixed schedule, regardless of why the payment failed. Treating them the same wastes recoverable revenue because temporary insufficient funds and permanently expired cards require completely different handling. 
+
+Recoverly replaces blind retries with a reasoned strategy[cite: 2]. When a payment fails, Recoverly categorizes the exact failure reason, schedules a smarter retry window based specifically on that reason, and executes it automatically. It then shows the merchant a live dashboard of recovered revenue and a dynamic cashflow forecast.
+
+## Testing the live demo
+
+Because a real bank decline cannot be easily forced live, the dashboard includes a tool to safely simulate the recovery flow[cite: 2]:
+
+1. Log in to the live demo using the provided test credentials.
+2. Click **Simulate Failure** on a subscription. This fires a synthetic webhook so you can watch the full loop live without needing a real bank decline[cite: 2].
+3. Watch the subscription immediately move to the "At Risk" list. 
+4. Open the **Retry Reasoning** panel to read the AI-generated plain-English explanation[cite: 2].
+5. Execute the scheduled retry (via the demo shortcut) to watch the recovery succeed and see the **Recovered Counter** and **Forecast Chart** update live[cite: 2].
 
 ## Architecture
 
@@ -42,7 +55,7 @@ When a subscription payment fails on Razorpay, Recoverly reads *why* it failed, 
    ```bash
    npm run dev
    ```
-5. Open http://localhost:3000 and log in with the `DEMO_EMAIL` / `DEMO_PASSWORD` from your `.env`.
+5. Open http://localhost:3000 and log in with your credentials (`demo@recoverly.app` / `recoverly-demo`).
 
 ## Environment variables
 
