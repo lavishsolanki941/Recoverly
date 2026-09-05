@@ -8,17 +8,26 @@ import type { FailureCategory } from "@/services/retry-scheduler";
 // rule code) before this is ever called. Nothing here can change when or
 // whether a retry happens; a failure here just means no narrative.
 
-// The Gemini API rejects "gemini-2.5-flash" for this project with a 404:
-// "This model ... is no longer available to new users ... use
-// models/gemini-3.6-flash". Verified live against the configured
-// GEMINI_API_KEY, not assumed — overridable via GEMINI_MODEL in case a
-// different key/project still has 2.5-flash access.
-const MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
+// "gemini-2.5-flash" and "gemini-2.5-flash-lite" both 404 for this project
+// ("no longer available to new users") — verified live against the
+// configured GEMINI_API_KEY, not assumed. "gemini-flash-lite-latest" is a
+// Google-maintained alias that always points at their current recommended
+// lite-tier flash model, so it doesn't rot the way a dated model string does.
+const PRIMARY_MODEL = process.env.GEMINI_MODEL || "gemini-flash-lite-latest";
+// A live stress test (5 back-to-back calls) showed the primary succeeding
+// but with latency climbing under load, and other dated/preview model names
+// intermittently 503/504ing — no single model name is reliably available at
+// any given moment. If the primary fails for any reason, one retry against a
+// second, distinct alias (not env-configurable — this is a resilience
+// fallback, not a user preference) meaningfully raises the odds of getting a
+// narrative at all before giving up.
+const FALLBACK_MODEL = "gemini-flash-latest";
 // This is always invoked from inside next/server's after() (see the webhook
 // route), which runs once Razorpay's response has already been sent — so
-// this timeout only needs to fit the route's maxDuration, not Razorpay's
-// 5s webhook response budget.
-const REQUEST_TIMEOUT_MS = 15_000;
+// this only needs to fit the route's maxDuration, not Razorpay's 5s webhook
+// response budget. Kept short enough that two attempts (primary + fallback)
+// still fit comfortably inside that budget.
+const REQUEST_TIMEOUT_MS = 10_000;
 
 export interface FailureRecord {
   errorCode: string | null;
@@ -116,6 +125,44 @@ async function logAiError(message: string, input: FailureRecord) {
   }
 }
 
+async function callModel(
+  ai: GoogleGenAI,
+  model: string,
+  input: FailureRecord
+): Promise<AiExplanationResult> {
+  const response = await ai.models.generateContent({
+    model,
+    contents: JSON.stringify(input),
+    config: {
+      systemInstruction: SYSTEM_INSTRUCTION,
+      responseMimeType: "application/json",
+      responseSchema: buildResponseSchema(),
+      temperature: 0.2,
+      maxOutputTokens: 300,
+      httpOptions: { timeout: REQUEST_TIMEOUT_MS },
+    },
+  });
+
+  const raw = response.text;
+  if (!raw) throw new Error("Empty response from Gemini");
+
+  const parsedJson: unknown = JSON.parse(stripCodeFences(raw));
+  const parsed = responseSchema.safeParse(parsedJson);
+  if (!parsed.success) {
+    throw new Error(`Response failed schema validation: ${parsed.error.message}`);
+  }
+
+  return parsed.data;
+}
+
+function describeError(error: unknown): string {
+  return error instanceof GenAiApiError
+    ? `Gemini API error (status ${error.status}): ${error.message}`
+    : error instanceof Error
+      ? error.message
+      : "Unknown AI explainer error";
+}
+
 export async function explainFailure(input: FailureRecord): Promise<AiExplanationResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -123,39 +170,20 @@ export async function explainFailure(input: FailureRecord): Promise<AiExplanatio
     return FALLBACK;
   }
 
+  const ai = new GoogleGenAI({ apiKey });
+
   try {
-    const ai = new GoogleGenAI({ apiKey });
-    const response = await ai.models.generateContent({
-      model: MODEL,
-      contents: JSON.stringify(input),
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        responseMimeType: "application/json",
-        responseSchema: buildResponseSchema(),
-        temperature: 0.2,
-        maxOutputTokens: 300,
-        httpOptions: { timeout: REQUEST_TIMEOUT_MS },
-      },
-    });
-
-    const raw = response.text;
-    if (!raw) throw new Error("Empty response from Gemini");
-
-    const parsedJson: unknown = JSON.parse(stripCodeFences(raw));
-    const parsed = responseSchema.safeParse(parsedJson);
-    if (!parsed.success) {
-      throw new Error(`Response failed schema validation: ${parsed.error.message}`);
+    return await callModel(ai, PRIMARY_MODEL, input);
+  } catch (primaryError) {
+    try {
+      return await callModel(ai, FALLBACK_MODEL, input);
+    } catch (fallbackError) {
+      await logAiError(
+        `Primary model "${PRIMARY_MODEL}" failed: ${describeError(primaryError)} | ` +
+          `Fallback model "${FALLBACK_MODEL}" failed: ${describeError(fallbackError)}`,
+        input
+      );
+      return FALLBACK;
     }
-
-    return parsed.data;
-  } catch (error) {
-    const message =
-      error instanceof GenAiApiError
-        ? `Gemini API error (status ${error.status}): ${error.message}`
-        : error instanceof Error
-          ? error.message
-          : "Unknown AI explainer error";
-    await logAiError(message, input);
-    return FALLBACK;
   }
 }
