@@ -16,7 +16,7 @@ interface RetryReasoningPanelProps {
 
 export function RetryReasoningPanel({ data, isLoading, error, onRetry }: RetryReasoningPanelProps) {
   return (
-    <Card className="rounded-2xl border border-border shadow-none ring-0">
+    <Card className="rounded-2xl border border-line-strong !bg-card-tint shadow-none ring-0" size="sm">
       <CardHeader>
         <CardTitle>Retry reasoning</CardTitle>
         <CardDescription>
@@ -26,9 +26,9 @@ export function RetryReasoningPanel({ data, isLoading, error, onRetry }: RetryRe
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2.5">
             {[0, 1, 2].map((i) => (
-              <Skeleton key={i} className="h-16 w-full" />
+              <Skeleton key={i} className="h-14 w-full" />
             ))}
           </div>
         ) : error ? (
@@ -40,7 +40,7 @@ export function RetryReasoningPanel({ data, isLoading, error, onRetry }: RetryRe
             {data.map((item) => {
               const badge = retryStatusBadge(item.status);
               return (
-                <li key={item.retryAttemptId} className="flex flex-col gap-1.5 py-3">
+                <li key={item.retryAttemptId} className="flex flex-col gap-1.5 py-2.5">
                   <div className="flex items-center justify-between gap-4">
                     <span className="truncate text-sm font-medium">{item.subscriberName}</span>
                     <span className="shrink-0 font-mono text-sm font-medium tabular-nums">

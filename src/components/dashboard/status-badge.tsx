@@ -5,11 +5,11 @@ import { cn } from "@/lib/utils";
 export type StatusTone = "good" | "warning" | "info" | "critical" | "neutral";
 
 const TONE_CLASSES: Record<StatusTone, string> = {
-  good: "text-status-good bg-status-good/10",
-  warning: "text-status-warning bg-status-warning/10",
-  info: "text-status-info bg-status-info/10",
-  critical: "text-status-critical bg-status-critical/10",
-  neutral: "text-muted-foreground bg-muted",
+  good: "text-status-good bg-status-good/15 ring-status-good/25",
+  warning: "text-status-warning bg-status-warning/15 ring-status-warning/25",
+  info: "text-status-info bg-status-info/15 ring-status-info/25",
+  critical: "text-status-critical bg-status-critical/15 ring-status-critical/25",
+  neutral: "text-muted-foreground bg-muted ring-border",
 };
 
 // Status is never carried by color alone — every badge pairs an icon with a
@@ -26,7 +26,7 @@ export function StatusBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ring-1",
         TONE_CLASSES[tone]
       )}
     >

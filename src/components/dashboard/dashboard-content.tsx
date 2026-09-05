@@ -7,6 +7,7 @@ import { RecoveredCounter } from "@/components/dashboard/recovered-counter";
 import { ForecastChart } from "@/components/dashboard/forecast-chart";
 import { AtRiskList } from "@/components/dashboard/at-risk-list";
 import { RetryReasoningPanel } from "@/components/dashboard/retry-reasoning-panel";
+import { FailureBreakdown } from "@/components/dashboard/failure-breakdown";
 import { DemoControls } from "@/components/dashboard/demo-controls";
 
 // Polls live DB state without a manual refresh. The cron only runs every
@@ -26,16 +27,31 @@ export function DashboardContent() {
   const hasError = Boolean(error);
   const stillLoading = isLoading && !data;
 
+  // Hero supporting stats — derived from data already fetched for the rest
+  // of the dashboard, not a separate call.
+  const activeRetries = data?.atRisk.length ?? 0;
+  const resolvedRetries = (data?.retryReasoning ?? []).filter(
+    (r) => r.status === "SUCCEEDED" || r.status === "FAILED"
+  );
+  const recoveryRate =
+    resolvedRetries.length > 0
+      ? Math.round(
+          (resolvedRetries.filter((r) => r.status === "SUCCEEDED").length / resolvedRetries.length) * 100
+        )
+      : null;
+
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-5">
       <RecoveredCounter
         data={data?.recovered}
+        activeRetries={activeRetries}
+        recoveryRate={recoveryRate}
         isLoading={stillLoading}
         error={hasError}
         onRetry={onRetry}
       />
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-5 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <ForecastChart
             data={data?.forecast}
@@ -52,12 +68,22 @@ export function DashboardContent() {
         />
       </div>
 
-      <RetryReasoningPanel
-        data={data?.retryReasoning}
-        isLoading={stillLoading}
-        error={hasError}
-        onRetry={onRetry}
-      />
+      <div className="grid gap-5 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <RetryReasoningPanel
+            data={data?.retryReasoning}
+            isLoading={stillLoading}
+            error={hasError}
+            onRetry={onRetry}
+          />
+        </div>
+        <FailureBreakdown
+          data={data?.retryReasoning}
+          isLoading={stillLoading}
+          error={hasError}
+          onRetry={onRetry}
+        />
+      </div>
 
       <DemoControls />
     </div>

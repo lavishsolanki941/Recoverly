@@ -16,16 +16,16 @@ interface AtRiskListProps {
 
 export function AtRiskList({ data, isLoading, error, onRetry }: AtRiskListProps) {
   return (
-    <Card className="rounded-2xl border border-border shadow-none ring-0">
+    <Card className="rounded-2xl border border-line-strong !bg-card-tint shadow-none ring-0" size="sm">
       <CardHeader>
         <CardTitle>At-risk subscriptions</CardTitle>
         <CardDescription>Failed payments with a retry in progress.</CardDescription>
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2.5">
             {[0, 1, 2].map((i) => (
-              <Skeleton key={i} className="h-14 w-full" />
+              <Skeleton key={i} className="h-12 w-full" />
             ))}
           </div>
         ) : error ? (
@@ -37,7 +37,7 @@ export function AtRiskList({ data, isLoading, error, onRetry }: AtRiskListProps)
             {data.map((item) => {
               const badge = item.retry ? retryStatusBadge(item.retry.status) : null;
               return (
-                <li key={item.paymentId} className="flex items-center justify-between gap-4 py-3">
+                <li key={item.paymentId} className="flex items-center justify-between gap-4 py-2.5">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{item.subscriberName}</p>
                     <p className="truncate text-xs text-muted-foreground">{item.subscriberEmail}</p>

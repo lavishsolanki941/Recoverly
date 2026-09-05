@@ -6,8 +6,8 @@ export default async function DashboardPage() {
   const session = await auth();
 
   return (
-    <main className="min-h-full flex-1 bg-background p-6 sm:p-10">
-      <div className="mx-auto flex max-w-6xl flex-col gap-8">
+    <main className="min-h-full flex-1 bg-background p-6 sm:p-8">
+      <div className="mx-auto flex max-w-7xl flex-col gap-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-semibold text-foreground">Recoverly</h1>

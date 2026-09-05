@@ -92,7 +92,7 @@ export function ForecastChart({ data, isLoading, error, onRetry }: ForecastChart
   const isEmpty = points.length === 0 || points.every((p) => p.baseline === 0 && p.withRecovery === 0);
 
   return (
-    <Card className="rounded-2xl border border-border shadow-none ring-0">
+    <Card className="rounded-2xl border border-line-strong !bg-card-tint shadow-none ring-0" size="sm">
       <CardHeader>
         <CardTitle>Cashflow forecast</CardTitle>
         <CardDescription>
