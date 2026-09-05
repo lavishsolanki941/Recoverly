@@ -88,6 +88,6 @@ Webhook ingestion uses strict HMAC-SHA256 signature verification over the raw re
 While the Buildathon MVP focuses purely on failed subscription payments, the architecture is designed to extend into Razorpay's broader Agent Studio vision:
 * **Dispute Management:** Automatically gathering merchant evidence when a subscription payment is contested.
 * **Abandoned Carts:** Applying the same AI-reasoning pipeline to one-off checkout drops.
-* **Multi-channel Notifications:** Alerting merchants via WhatsApp/SMS for high-value unrecoverable failures.
+* **Multi-channel Notifications:** Alerting merchants via WhatsApp or SMS for high-value unrecoverable failures.
 
 
