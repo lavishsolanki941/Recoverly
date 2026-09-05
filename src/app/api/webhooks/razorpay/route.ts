@@ -3,7 +3,8 @@ import Razorpay from "razorpay";
 import { prisma } from "@/lib/prisma";
 import { razorpay } from "@/lib/razorpay";
 import { Prisma } from "@/generated/prisma/client";
-import { PaymentStatus } from "@/generated/prisma/enums";
+import { PaymentStatus, RetryStatus } from "@/generated/prisma/enums";
+import { classifyFailure, scheduleRetry } from "@/services/retry-scheduler";
 
 // The events this endpoint currently acts on. Subscription lifecycle events
 // (subscription.charged/pending/halted/...) are intentionally out of scope
@@ -139,7 +140,7 @@ async function handlePaymentEvent(payload: RazorpayWebhookPayload) {
     errorReason: payment.error_reason,
   };
 
-  await prisma.payment.upsert({
+  const paymentRecord = await prisma.payment.upsert({
     where: { razorpayPaymentId: payment.id },
     update: {
       status,
@@ -157,6 +158,52 @@ async function handlePaymentEvent(payload: RazorpayWebhookPayload) {
       ...errorFields,
       capturedAt: status === PaymentStatus.CAPTURED ? now : null,
       failedAt: status === PaymentStatus.FAILED ? now : null,
+    },
+  });
+
+  if (status === PaymentStatus.FAILED) {
+    await scheduleRetryForFailedPayment(subscription.id, paymentRecord.id, errorFields);
+  }
+}
+
+async function scheduleRetryForFailedPayment(
+  subscriptionId: string,
+  paymentId: string,
+  errorFields: { errorCode: string | null; errorDescription: string | null; errorReason: string | null }
+) {
+  // attemptNumber counts retries for the *current* billing-cycle failure
+  // streak — attempts made since the subscription's last successful charge
+  // — so a subscription with old, already-recovered failures doesn't start
+  // a new failure at an inflated attempt number.
+  const lastCaptured = await prisma.payment.findFirst({
+    where: { subscriptionId, status: PaymentStatus.CAPTURED },
+    orderBy: { createdAt: "desc" },
+  });
+  const priorAttempts = await prisma.retryAttempt.count({
+    where: {
+      payment: {
+        subscriptionId,
+        ...(lastCaptured ? { createdAt: { gt: lastCaptured.createdAt } } : {}),
+      },
+    },
+  });
+
+  const plan = scheduleRetry(errorFields, priorAttempts + 1);
+
+  await prisma.payment.update({
+    where: { id: paymentId },
+    data: { failureCategory: plan?.category ?? classifyFailure(errorFields) },
+  });
+
+  if (!plan) return;
+
+  await prisma.retryAttempt.create({
+    data: {
+      paymentId,
+      attemptNumber: priorAttempts + 1,
+      strategy: plan.strategy,
+      status: RetryStatus.PENDING,
+      scheduledFor: plan.scheduledFor,
     },
   });
 }
