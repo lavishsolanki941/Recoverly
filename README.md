@@ -1,10 +1,21 @@
 # Recoverly
 
+**Live Demo:** [recoverly-seven.vercel.app](https://recoverly-seven.vercel.app)  
 AI-powered revenue recovery for Razorpay merchants. Built for the Razorpay Buildathon (Track 3: AI Revenue Recovery).
 
 ## What it does
 
-When a subscription payment fails on Razorpay, Recoverly reads *why* it failed, schedules a smarter retry based on that reason, executes the retry automatically, and shows the merchant a live dashboard of recovered revenue and a cashflow forecast. AI (Google Gemini) writes the plain-English explanation for each retry decision all money-critical timing logic is deterministic rule code, never the model.
+When a subscription payment fails on Razorpay, Recoverly reads *why* it failed, schedules a smarter retry based on that reason, executes the retry automatically, and shows the merchant a live dashboard of recovered revenue and a cashflow forecast.
+
+## Architecture
+
+> **Design Principle:** Retry timing and payment execution are 100% deterministic and auditable. AI (Google Gemini) is isolated strictly to the reasoning/explanation layer to translate complex gateway failure codes into human-readable insights for merchants.
+
+* **Webhook Ingestion:** Catches `payment.failed` and `subscription.charged` events directly from Razorpay.
+* **Smart Scheduler:** Categorizes failure codes into recoverable (temporary bank drops, insufficient funds) vs. unrecoverable (card expired, blacklisted) and schedules optimized retry windows.
+* **AI Explainer Service:** Uses Google Gemini (`gemini-flash-lite-latest`) with dual-model fallback to generate merchant-friendly diagnostics.
+* **Automated Recovery:** Generates Razorpay Payment Links and updates subscription statuses via daily Vercel Cron triggers.
+* **Real-time Analytics:** Aggregates recovered revenue and projects a 30-day cashflow forecast on a Next.js/shadcn dashboard.
 
 ## Tech stack
 
