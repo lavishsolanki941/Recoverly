@@ -20,8 +20,7 @@ export function RetryReasoningPanel({ data, isLoading, error, onRetry }: RetryRe
       <CardHeader>
         <CardTitle>Retry reasoning</CardTitle>
         <CardDescription>
-          Why each retry was scheduled — deterministic rules today; Gemini will add
-          plain-English explanations on top later.
+          Why each retry was scheduled — AI-written explanations of each failure and retry decision.
         </CardDescription>
       </CardHeader>
       <CardContent>

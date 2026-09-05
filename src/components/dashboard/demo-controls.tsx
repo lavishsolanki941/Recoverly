@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
-import { CheckCircle2, PlayCircle, TimerReset } from "lucide-react";
+import { CheckCircle2, PlayCircle, RotateCcw, TimerReset } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fetcher, FetchError } from "@/lib/fetcher";
 import { formatRupees } from "@/lib/format";
@@ -53,6 +53,7 @@ export function DemoControls() {
   const [isSimulating, setIsSimulating] = useState(false);
   const [isRunningCron, setIsRunningCron] = useState(false);
   const [isMarkingRecovered, setIsMarkingRecovered] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const [message, setMessage] = useState<ActionMessage>(null);
 
   const activeSubscriptionId = subscriptionId || subscriptions[0]?.id || "";
@@ -134,6 +135,26 @@ export function DemoControls() {
     }
   }
 
+  async function handleReset() {
+    if (!window.confirm("Reset all demo data? This deletes every payment and retry, and resets subscriptions to active.")) {
+      return;
+    }
+    setIsResetting(true);
+    setMessage(null);
+    try {
+      const result = await postJson("/api/demo/reset");
+      setMessage({
+        tone: "success",
+        text: `Demo data reset — cleared ${result.deletedPayments} payment(s) and ${result.deletedRetryAttempts} retry attempt(s).`,
+      });
+      await mutate("/api/forecast");
+    } catch (error) {
+      setMessage({ tone: "error", text: demoModeDisabledMessage(error) });
+    } finally {
+      setIsResetting(false);
+    }
+  }
+
   return (
     <section className="rounded-xl border border-dashed border-line bg-transparent p-4">
       <p className="text-[11px] font-medium tracking-[0.1em] text-muted-foreground uppercase">
@@ -212,6 +233,11 @@ export function DemoControls() {
         >
           <CheckCircle2 className="size-3.5" />
           {isMarkingRecovered ? "Marking…" : "Mark recovered"}
+        </Button>
+
+        <Button variant="outline" size="sm" onClick={handleReset} disabled={isResetting}>
+          <RotateCcw className="size-3.5" />
+          {isResetting ? "Resetting…" : "Reset demo data"}
         </Button>
       </div>
 

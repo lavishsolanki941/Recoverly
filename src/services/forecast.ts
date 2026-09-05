@@ -158,7 +158,15 @@ async function computeAtRisk(): Promise<AtRiskSubscription[]> {
   const payments = await prisma.payment.findMany({
     where: {
       status: PaymentStatus.FAILED,
-      retryAttempts: { some: { status: { in: [RetryStatus.PENDING, RetryStatus.PROCESSING] } } },
+      OR: [
+        // The normal case — a retry is actively scheduled/in flight.
+        { retryAttempts: { some: { status: { in: [RetryStatus.PENDING, RetryStatus.PROCESSING] } } } },
+        // NOT_RETRYABLE failures (expired/blacklisted/stolen card, etc.) never
+        // get a RetryAttempt row at all — the scheduler deliberately declines
+        // to retry. Surface them here too, so that deliberate "no retry"
+        // decision is visible rather than looking like the app did nothing.
+        { failureCategory: "NOT_RETRYABLE", retryAttempts: { none: {} } },
+      ],
     },
     orderBy: { failedAt: "desc" },
     take: 20,

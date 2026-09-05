@@ -53,6 +53,24 @@ export function retryStatusBadge(status: string) {
   }
 }
 
+// For a payment the scheduler deliberately declined to retry (NOT_RETRYABLE
+// — see retry-scheduler.ts). Distinct from retryStatusBadge's "No retry
+// scheduled" fallback: this says *why*, so it reads as an intelligent
+// decision rather than the app silently doing nothing.
+export function nonRetryableBadge(errorReason: string | null) {
+  const reason = (errorReason ?? "").toLowerCase();
+  const cause = reason.includes("expired")
+    ? "card expired"
+    : reason.includes("blacklist")
+      ? "card blacklisted"
+      : null;
+  return {
+    tone: "critical" as const,
+    label: cause ? `No retry — ${cause}, needs customer action` : "No retry — needs customer action",
+    icon: AlertTriangle,
+  };
+}
+
 export function failureCategoryBadge(category: string | null) {
   switch (category) {
     case "NOT_RETRYABLE":

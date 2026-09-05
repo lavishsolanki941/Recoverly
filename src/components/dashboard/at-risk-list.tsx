@@ -3,7 +3,7 @@
 import { Card, CardDescription, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState, EmptyState } from "@/components/dashboard/state-views";
-import { StatusBadge, retryStatusBadge } from "@/components/dashboard/status-badge";
+import { StatusBadge, retryStatusBadge, nonRetryableBadge } from "@/components/dashboard/status-badge";
 import { formatRupees, formatRelativeTime } from "@/lib/format";
 import type { AtRiskSubscription } from "@/services/forecast";
 
@@ -19,7 +19,7 @@ export function AtRiskList({ data, isLoading, error, onRetry }: AtRiskListProps)
     <Card className="rounded-2xl border border-line-strong !bg-card-tint shadow-none ring-0" size="sm">
       <CardHeader>
         <CardTitle>At-risk subscriptions</CardTitle>
-        <CardDescription>Failed payments with a retry in progress.</CardDescription>
+        <CardDescription>Failed payments — retry in progress, or flagged as non-retryable.</CardDescription>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -35,7 +35,11 @@ export function AtRiskList({ data, isLoading, error, onRetry }: AtRiskListProps)
         ) : (
           <ul className="flex flex-col divide-y divide-border">
             {data.map((item) => {
-              const badge = item.retry ? retryStatusBadge(item.retry.status) : null;
+              const badge = item.retry
+                ? retryStatusBadge(item.retry.status)
+                : item.failureCategory === "NOT_RETRYABLE"
+                  ? nonRetryableBadge(item.errorReason)
+                  : null;
               return (
                 <li key={item.paymentId} className="flex items-center justify-between gap-4 py-2.5">
                   <div className="min-w-0">
