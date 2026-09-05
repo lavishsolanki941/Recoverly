@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SubscriptionStatus {
+  CREATED
+  AUTHENTICATED
+  ACTIVE
+  PENDING
+  PAUSED
+  HALTED
+  CANCELLED
+  COMPLETED
+  EXPIRED
+}
+
+enum PaymentStatus {
+  CREATED
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+
+enum RetryStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+// The merchant's end customer. There is no separate Merchant model —
+// this app is single-tenant, and the merchant is the one seeded NextAuth login.
+model Subscriber {
+  id                 String   @id @default(cuid())
+  name               String
+  email              String   @unique
+  phone              String?
+  razorpayCustomerId String?  @unique
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  subscriptions Subscription[]
+
+  @@map("subscribers")
+}
+
+model Subscription {
+  id                     String             @id @default(cuid())
+  subscriberId           String
+  subscriber             Subscriber         @relation(fields: [subscriberId], references: [id])
+  razorpaySubscriptionId String             @unique
+  // Reference to the Razorpay Plan this subscription bills against. Not a
+  // separate Plan model/table — deliberately out of scope for this app;
+  // intentionally NOT unique, since many subscriptions share one plan.
+  razorpayPlanId         String
+  status                 SubscriptionStatus @default(CREATED)
+  amount                 Int
+  currency               String             @default("INR")
+  currentStart           DateTime?
+  currentEnd             DateTime?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  payments Payment[]
+
+  @@index([subscriberId])
+  @@map("subscriptions")
+}
+
+model Payment {
+  id                String        @id @default(cuid())
+  subscriptionId    String
+  subscription      Subscription  @relation(fields: [subscriptionId], references: [id])
+  razorpayPaymentId String        @unique
+  // Nullable: unconfirmed whether Razorpay always attaches an order_id to
+  // subscription-cycle payments (vs. order/payment-link-initiated ones) —
+  // verify against current Razorpay docs before relying on this in Phase 4.
+  razorpayOrderId   String?       @unique
+  amount            Int
+  currency          String        @default("INR")
+  status            PaymentStatus
+  errorCode         String?
+  errorDescription  String?
+  errorReason       String?
+  failureCategory   String?
+  capturedAt        DateTime?
+  failedAt          DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  retryAttempts RetryAttempt[]
+
+  @@index([subscriptionId])
+  @@map("payments")
+}
+
+model RetryAttempt {
+  id            String      @id @default(cuid())
+  paymentId     String
+  payment       Payment     @relation(fields: [paymentId], references: [id])
+  attemptNumber Int
+  strategy      String
+  status        RetryStatus @default(PENDING)
+  scheduledFor  DateTime
+  executedAt    DateTime?
+
+  // Retry execution mechanism: a fresh Payment Link for the failed amount
+  // (see constraints — this is the controllable hackathon path, not a
+  // programmatic subscription retry API).
+  razorpayPaymentLinkId   String? @unique
+  paymentLinkShortUrl     String?
+  // Populated once the webhook confirms the link was paid; recovered amount
+  // is read from the related Payment (a link is generated for its exact
+  // failed amount), so it isn't duplicated here.
+  resultRazorpayPaymentId String? @unique
+
+  // AI-generated narrative only (Gemini) — never used to decide timing.
+  aiExplanation       String?
+  aiConfidencePenalty Float?
+  aiEdgeCaseOverride  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, scheduledFor])
+  @@index([paymentId])
+  @@map("retry_attempts")
+}
+
+// Idempotency log for incoming Razorpay webhooks.
+model WebhookEvent {
+  id String @id @default(cuid())
+
+  // Uniqueness key for idempotent processing. NOTE: the exact source of a
+  // stable per-delivery identifier in Razorpay's webhook payload/headers is
+  // unconfirmed — verify against current Razorpay docs in Phase 4 before
+  // wiring the real verification logic.
+  razorpayEventId String    @unique
+  eventType       String
+  payload         Json
+  receivedAt      DateTime  @default(now())
+  processedAt     DateTime?
+
+  @@map("webhook_events")
+}
+
+// Generic error log (Gemini failures, Razorpay API call failures, cron
+// errors, etc.) — not money-critical, purely for debugging/observability.
+model ApiError {
+  id        String   @id @default(cuid())
+  source    String
+  context   String?
+  message   String
+  details   Json?
+  createdAt DateTime @default(now())
+
+  @@map("api_errors")
+}
