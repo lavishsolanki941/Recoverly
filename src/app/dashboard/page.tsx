@@ -6,12 +6,12 @@ export default async function DashboardPage() {
   const session = await auth();
 
   return (
-    <main className="min-h-full flex-1 bg-neutral-50 p-8">
-      <div className="mx-auto flex max-w-5xl flex-col gap-6">
+    <main className="min-h-full flex-1 bg-background p-6 sm:p-10">
+      <div className="mx-auto flex max-w-6xl flex-col gap-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">Recoverly Dashboard</h1>
-            <p className="text-sm text-neutral-500">
+            <h1 className="text-xl font-semibold text-foreground">Recoverly</h1>
+            <p className="text-sm text-muted-foreground">
               Signed in as {session?.user?.email}
             </p>
           </div>
@@ -21,7 +21,7 @@ export default async function DashboardPage() {
               await signOut({ redirectTo: "/login" });
             }}
           >
-            <Button type="submit" variant="outline">
+            <Button type="submit" variant="outline" size="sm">
               Sign out
             </Button>
           </form>

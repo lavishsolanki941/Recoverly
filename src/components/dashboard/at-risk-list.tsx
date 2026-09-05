@@ -16,7 +16,7 @@ interface AtRiskListProps {
 
 export function AtRiskList({ data, isLoading, error, onRetry }: AtRiskListProps) {
   return (
-    <Card>
+    <Card className="rounded-2xl border border-border shadow-none ring-0">
       <CardHeader>
         <CardTitle>At-risk subscriptions</CardTitle>
         <CardDescription>Failed payments with a retry in progress.</CardDescription>
@@ -43,7 +43,7 @@ export function AtRiskList({ data, isLoading, error, onRetry }: AtRiskListProps)
                     <p className="truncate text-xs text-muted-foreground">{item.subscriberEmail}</p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
-                    <span className="text-sm font-medium tabular-nums">
+                    <span className="font-mono text-sm font-medium tabular-nums">
                       {formatRupees(item.amount)}
                     </span>
                     {badge ? (

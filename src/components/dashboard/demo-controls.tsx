@@ -3,7 +3,6 @@
 import { useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import { CheckCircle2, PlayCircle, TimerReset } from "lucide-react";
-import { Card, CardDescription, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { fetcher, FetchError } from "@/lib/fetcher";
 import { formatRupees } from "@/lib/format";
@@ -136,88 +135,93 @@ export function DemoControls() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Demo controls</CardTitle>
-        <CardDescription>
-          Manufacture a failed payment, force the retry cron to run, or mark the retry as recovered.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-end gap-2">
-          <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-            Subscription
-            <select
-              className="h-8 min-w-48 rounded-md border border-input bg-transparent px-2 text-sm text-foreground"
-              value={activeSubscriptionId}
-              onChange={(e) => setSubscriptionId(e.target.value)}
-            >
-              {subscriptions.length === 0 && <option value="">No subscriptions yet</option>}
-              {subscriptions.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.subscriber.name} — {formatRupees(s.amount / 100)}
-                </option>
-              ))}
-            </select>
-          </label>
+    <section className="rounded-xl border border-dashed border-line bg-transparent p-4">
+      <p className="text-[11px] font-medium tracking-[0.1em] text-muted-foreground uppercase">
+        Demo tools
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Manufacture a failed payment, force the retry cron to run, or mark the retry as recovered.
+      </p>
 
-          <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-            Failure scenario
-            <select
-              className="h-8 min-w-48 rounded-md border border-input bg-transparent px-2 text-sm text-foreground"
-              value={scenarioKey}
-              onChange={(e) => setScenarioKey(e.target.value)}
-            >
-              {DEMO_SCENARIOS.map((s) => (
-                <option key={s.key} value={s.key}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="flex h-8 items-center gap-1.5 text-xs text-muted-foreground">
-            <input
-              type="checkbox"
-              className="size-3.5"
-              checked={forceDueNow}
-              onChange={(e) => setForceDueNow(e.target.checked)}
-            />
-            Force due now
-          </label>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSimulate}
-            disabled={isSimulating || !activeSubscriptionId}
+      <div className="mt-3 flex flex-wrap items-end gap-2">
+        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+          Subscription
+          <select
+            className="h-8 min-w-48 rounded-md border border-input bg-transparent px-2 text-sm text-foreground"
+            value={activeSubscriptionId}
+            onChange={(e) => setSubscriptionId(e.target.value)}
           >
-            <PlayCircle className="size-3.5" />
-            {isSimulating ? "Simulating…" : "Simulate failure"}
-          </Button>
+            {subscriptions.length === 0 && <option value="">No subscriptions yet</option>}
+            {subscriptions.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.subscriber.name} — {formatRupees(s.amount / 100)}
+              </option>
+            ))}
+          </select>
+        </label>
 
-          <Button variant="outline" size="sm" onClick={handleRunCron} disabled={isRunningCron}>
-            <TimerReset className="size-3.5" />
-            {isRunningCron ? "Running…" : "Run cron now"}
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleMarkRecovered}
-            disabled={isMarkingRecovered || !activeSubscriptionId}
+        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+          Failure scenario
+          <select
+            className="h-8 min-w-48 rounded-md border border-input bg-transparent px-2 text-sm text-foreground"
+            value={scenarioKey}
+            onChange={(e) => setScenarioKey(e.target.value)}
           >
-            <CheckCircle2 className="size-3.5" />
-            {isMarkingRecovered ? "Marking…" : "Mark recovered"}
-          </Button>
-        </div>
+            {DEMO_SCENARIOS.map((s) => (
+              <option key={s.key} value={s.key}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </label>
 
-        {message && (
-          <p className={message.tone === "error" ? "text-xs text-status-critical" : "text-xs text-status-good"}>
-            {message.text}
-          </p>
-        )}
-      </CardContent>
-    </Card>
+        <label className="flex h-8 items-center gap-1.5 text-xs text-muted-foreground">
+          <input
+            type="checkbox"
+            className="size-3.5"
+            checked={forceDueNow}
+            onChange={(e) => setForceDueNow(e.target.checked)}
+          />
+          Force due now
+        </label>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleSimulate}
+          disabled={isSimulating || !activeSubscriptionId}
+        >
+          <PlayCircle className="size-3.5" />
+          {isSimulating ? "Simulating…" : "Simulate failure"}
+        </Button>
+
+        <Button variant="outline" size="sm" onClick={handleRunCron} disabled={isRunningCron}>
+          <TimerReset className="size-3.5" />
+          {isRunningCron ? "Running…" : "Run cron now"}
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleMarkRecovered}
+          disabled={isMarkingRecovered || !activeSubscriptionId}
+        >
+          <CheckCircle2 className="size-3.5" />
+          {isMarkingRecovered ? "Marking…" : "Mark recovered"}
+        </Button>
+      </div>
+
+      {message && (
+        <p
+          className={
+            message.tone === "error"
+              ? "mt-3 text-xs text-status-critical"
+              : "mt-3 text-xs text-status-good"
+          }
+        >
+          {message.text}
+        </p>
+      )}
+    </section>
   );
 }

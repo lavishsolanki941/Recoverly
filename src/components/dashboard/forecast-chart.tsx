@@ -51,7 +51,7 @@ function ChartTooltip({
               className="inline-block h-0.5 w-3 shrink-0 rounded-full"
               style={{ backgroundColor: entry.color }}
             />
-            <span className="font-medium tabular-nums text-popover-foreground">
+            <span className="font-mono font-medium tabular-nums text-popover-foreground">
               {formatRupees(entry.value)}
             </span>
             <span className="text-muted-foreground">{entry.name}</span>
@@ -73,7 +73,7 @@ function ForecastTable({ points }: { points: ForecastPoint[] }) {
             <th className="px-2 py-1.5 text-right font-medium">With recovery</th>
           </tr>
         </thead>
-        <tbody className="tabular-nums">
+        <tbody className="font-mono tabular-nums">
           {points.map((p) => (
             <tr key={p.date} className="border-t border-border">
               <td className="px-2 py-1.5">{formatDateShort(p.date)}</td>
@@ -92,7 +92,7 @@ export function ForecastChart({ data, isLoading, error, onRetry }: ForecastChart
   const isEmpty = points.length === 0 || points.every((p) => p.baseline === 0 && p.withRecovery === 0);
 
   return (
-    <Card>
+    <Card className="rounded-2xl border border-border shadow-none ring-0">
       <CardHeader>
         <CardTitle>Cashflow forecast</CardTitle>
         <CardDescription>

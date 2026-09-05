@@ -16,7 +16,7 @@ interface RetryReasoningPanelProps {
 
 export function RetryReasoningPanel({ data, isLoading, error, onRetry }: RetryReasoningPanelProps) {
   return (
-    <Card>
+    <Card className="rounded-2xl border border-border shadow-none ring-0">
       <CardHeader>
         <CardTitle>Retry reasoning</CardTitle>
         <CardDescription>
@@ -43,7 +43,7 @@ export function RetryReasoningPanel({ data, isLoading, error, onRetry }: RetryRe
                 <li key={item.retryAttemptId} className="flex flex-col gap-1.5 py-3">
                   <div className="flex items-center justify-between gap-4">
                     <span className="truncate text-sm font-medium">{item.subscriberName}</span>
-                    <span className="shrink-0 text-sm font-medium tabular-nums">
+                    <span className="shrink-0 font-mono text-sm font-medium tabular-nums">
                       {formatRupees(item.amount)}
                     </span>
                   </div>

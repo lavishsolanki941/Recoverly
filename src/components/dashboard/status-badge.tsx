@@ -2,11 +2,12 @@ import type { ComponentType } from "react";
 import { AlertTriangle, CheckCircle2, Clock, HelpCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type StatusTone = "good" | "warning" | "critical" | "neutral";
+export type StatusTone = "good" | "warning" | "info" | "critical" | "neutral";
 
 const TONE_CLASSES: Record<StatusTone, string> = {
   good: "text-status-good bg-status-good/10",
   warning: "text-status-warning bg-status-warning/10",
+  info: "text-status-info bg-status-info/10",
   critical: "text-status-critical bg-status-critical/10",
   neutral: "text-muted-foreground bg-muted",
 };
@@ -40,7 +41,7 @@ export function retryStatusBadge(status: string) {
     case "PENDING":
       return { tone: "warning" as const, label: "Scheduled", icon: Clock };
     case "PROCESSING":
-      return { tone: "warning" as const, label: "Link sent", icon: Loader2 };
+      return { tone: "info" as const, label: "Link sent", icon: Loader2 };
     case "SUCCEEDED":
       return { tone: "good" as const, label: "Recovered", icon: CheckCircle2 };
     case "FAILED":

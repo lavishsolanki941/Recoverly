@@ -27,9 +27,7 @@ export function DashboardContent() {
   const stillLoading = isLoading && !data;
 
   return (
-    <div className="flex flex-col gap-6">
-      <DemoControls />
-
+    <div className="flex flex-col gap-8">
       <RecoveredCounter
         data={data?.recovered}
         isLoading={stillLoading}
@@ -60,6 +58,8 @@ export function DashboardContent() {
         error={hasError}
         onRetry={onRetry}
       />
+
+      <DemoControls />
     </div>
   );
 }

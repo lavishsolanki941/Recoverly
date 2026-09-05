@@ -14,10 +14,16 @@ export function useAnimatedNumber(target: number, durationMs = 700): number {
     const from = fromRef.current;
     if (from === target) return;
 
+    // Reduced-motion: collapse to a single frame instead of animating —
+    // still goes through the same rAF-driven setState path (not a
+    // synchronous setState in the effect body), it just resolves on tick one.
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const effectiveDuration = reducedMotion ? 0 : durationMs;
+
     const start = performance.now();
     function tick(now: number) {
       const elapsed = now - start;
-      const t = Math.min(1, elapsed / durationMs);
+      const t = effectiveDuration === 0 ? 1 : Math.min(1, elapsed / effectiveDuration);
       setValue(from + (target - from) * easeOutCubic(t));
       if (t < 1) {
         frameRef.current = requestAnimationFrame(tick);
