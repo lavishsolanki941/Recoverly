@@ -2,6 +2,7 @@
 
 **Live Demo:** [recoverly-seven.vercel.app](https://recoverly-seven.vercel.app)  
 **Demo Credentials:** `demo@recoverly.app` / `recoverly-demo`
+
 AI-powered revenue recovery for Razorpay merchants. Built for the Razorpay Buildathon (Track 3: AI Revenue Recovery).
 
 ## What it does
@@ -31,7 +32,7 @@ Because a real bank decline cannot be easily forced live, the dashboard includes
 * **Real-time Analytics:** Aggregates recovered revenue and projects a 30-day cashflow forecast on a Next.js/shadcn dashboard.
 
 
-**Security & Idempotency:**
+* **Security & Idempotency:**
 Webhook ingestion uses strict HMAC-SHA256 signature verification over the raw request body. An idempotency table safely handles duplicate webhook deliveries (which Razorpay expects on retries) without double-processing.
 
 ## Tech stack
