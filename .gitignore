@@ -28,12 +28,7 @@ prisma/*.db-journal
 Thumbs.db
 .vscode/
 .idea/
-.agents/
-.claude/
-.windsurf/
-AGENTS.md
-CLAUDE.md
-skills-lock.json
+
 
 # ---- misc ----
 *.pem
