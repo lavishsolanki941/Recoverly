@@ -8,17 +8,17 @@ AI-powered revenue recovery for Razorpay merchants. Built for the Razorpay Build
 
 Razorpay's default behavior retries a failed payment on a fixed schedule, regardless of why the payment failed. Treating them the same wastes recoverable revenue because temporary insufficient funds and permanently expired cards require completely different handling. 
 
-Recoverly replaces blind retries with a reasoned strategy[cite: 2]. When a payment fails, Recoverly categorizes the exact failure reason, schedules a smarter retry window based specifically on that reason, and executes it automatically. It then shows the merchant a live dashboard of recovered revenue and a dynamic cashflow forecast.
+Recoverly replaces blind retries with a reasoned strategy. When a payment fails, Recoverly categorizes the exact failure reason, schedules a smarter retry window based specifically on that reason, and executes it automatically. It then shows the merchant a live dashboard of recovered revenue and a dynamic cashflow forecast.
 
 ## Testing the live demo
 
-Because a real bank decline cannot be easily forced live, the dashboard includes a tool to safely simulate the recovery flow[cite: 2]:
+Because a real bank decline cannot be easily forced live, the dashboard includes a tool to safely simulate the recovery flow:
 
 1. Log in to the live demo using the provided test credentials.
-2. Click **Simulate Failure** on a subscription. This fires a synthetic webhook so you can watch the full loop live without needing a real bank decline[cite: 2].
+2. Click **Simulate Failure** on a subscription. This fires a synthetic webhook so you can watch the full loop live without needing a real bank decline.
 3. Watch the subscription immediately move to the "At Risk" list. 
-4. Open the **Retry Reasoning** panel to read the AI-generated plain-English explanation[cite: 2].
-5. Execute the scheduled retry (via the demo shortcut) to watch the recovery succeed and see the **Recovered Counter** and **Forecast Chart** update live[cite: 2].
+4. Open the **Retry Reasoning** panel to read the AI-generated plain-English explanation.
+5. Execute the scheduled retry (via the demo shortcut) to watch the recovery succeed and see the **Recovered Counter** and **Forecast Chart** update live.
 
 ## Architecture
 
@@ -29,6 +29,10 @@ Because a real bank decline cannot be easily forced live, the dashboard includes
 * **AI Explainer Service:** Uses Google Gemini (`gemini-flash-lite-latest`) with dual-model fallback to generate merchant-friendly diagnostics.
 * **Automated Recovery:** Generates Razorpay Payment Links and updates subscription statuses via daily Vercel Cron triggers.
 * **Real-time Analytics:** Aggregates recovered revenue and projects a 30-day cashflow forecast on a Next.js/shadcn dashboard.
+
+
+**Security & Idempotency:**
+Webhook ingestion uses strict HMAC-SHA256 signature verification over the raw request body. An idempotency table safely handles duplicate webhook deliveries (which Razorpay expects on retries) without double-processing.
 
 ## Tech stack
 
@@ -77,3 +81,12 @@ Because a real bank decline cannot be easily forced live, the dashboard includes
 - Everything runs in Razorpay **test mode** — no real money moves.
 - The Gemini free tier is rate-limited; if the AI explanation is briefly unavailable, the retry still schedules correctly using the rule-based strategy.
 - Built to run on Vercel + Neon, both on free tiers.
+
+## Future Scope
+
+While the Buildathon MVP focuses purely on failed subscription payments, the architecture is designed to extend into Razorpay's broader Agent Studio vision:
+* **Dispute Management:** Automatically gathering merchant evidence when a subscription payment is contested.
+* **Abandoned Carts:** Applying the same AI-reasoning pipeline to one-off checkout drops.
+* **Multi-channel Notifications:** Alerting merchants via WhatsApp/SMS for high-value unrecoverable failures.
+
+
