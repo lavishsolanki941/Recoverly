@@ -22,7 +22,9 @@ export interface PaymentEventInput {
   errorReason: string | null;
 }
 
-export async function processPaymentEvent(input: PaymentEventInput): Promise<{ paymentId: string }> {
+export async function processPaymentEvent(
+  input: PaymentEventInput
+): Promise<{ paymentId: string; retryAttemptId: string | null }> {
   const status = input.eventType === "payment.captured" ? PaymentStatus.CAPTURED : PaymentStatus.FAILED;
   const now = new Date();
 
@@ -53,18 +55,19 @@ export async function processPaymentEvent(input: PaymentEventInput): Promise<{ p
     },
   });
 
+  let retryAttemptId: string | null = null;
   if (status === PaymentStatus.FAILED) {
-    await scheduleRetryForFailedPayment(input.subscriptionId, paymentRecord, errorFields);
+    retryAttemptId = await scheduleRetryForFailedPayment(input.subscriptionId, paymentRecord, errorFields);
   }
 
-  return { paymentId: paymentRecord.id };
+  return { paymentId: paymentRecord.id, retryAttemptId };
 }
 
 async function scheduleRetryForFailedPayment(
   subscriptionId: string,
   payment: { id: string; amount: number; currency: string },
   errorFields: { errorCode: string | null; errorDescription: string | null; errorReason: string | null }
-) {
+): Promise<string | null> {
   // attemptNumber counts retries for the *current* billing-cycle failure
   // streak — attempts made since the subscription's last successful charge
   // — so a subscription with old, already-recovered failures doesn't start
@@ -91,7 +94,7 @@ async function scheduleRetryForFailedPayment(
     data: { failureCategory: category },
   });
 
-  if (!plan) return;
+  if (!plan) return null;
 
   const retryAttempt = await prisma.retryAttempt.create({
     data: {
@@ -130,4 +133,6 @@ async function scheduleRetryForFailedPayment(
       },
     });
   });
+
+  return retryAttempt.id;
 }

@@ -13,6 +13,10 @@ export const maxDuration = 30;
 const bodySchema = z.object({
   subscriptionId: z.string().min(1),
   errorCode: z.enum(DEMO_SCENARIOS.map((s) => s.key) as [string, ...string[]]),
+  // Demo-only: skip the scheduler's real delay so a "Run cron now" click
+  // immediately picks this up. Still requires DEMO_MODE — a real webhook
+  // never reaches this route at all, so production scheduling is untouched.
+  forceDueNow: z.boolean().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -57,7 +61,7 @@ export async function POST(request: NextRequest) {
   // Manufactures a realistic payment.failed event and runs it through the
   // exact same pipeline a real webhook uses (processPaymentEvent), rather
   // than reimplementing classification/scheduling/AI-explanation here.
-  const { paymentId } = await processPaymentEvent({
+  const { paymentId, retryAttemptId } = await processPaymentEvent({
     subscriptionId: subscription.id,
     eventType: "payment.failed",
     razorpayPaymentId: `pay_demo_${randomUUID().replace(/-/g, "").slice(0, 14)}`,
@@ -69,5 +73,15 @@ export async function POST(request: NextRequest) {
     errorReason: scenario.errorReason,
   });
 
-  return NextResponse.json({ status: "ok", paymentId }, { status: 201 });
+  // Applied as a follow-up update rather than a parameter on
+  // processPaymentEvent itself — that function is shared with the real
+  // webhook route and must never grow a "pretend this happened sooner" knob.
+  if (parsed.data.forceDueNow && retryAttemptId) {
+    await prisma.retryAttempt.update({
+      where: { id: retryAttemptId },
+      data: { scheduledFor: new Date() },
+    });
+  }
+
+  return NextResponse.json({ status: "ok", paymentId, retryAttemptId }, { status: 201 });
 }

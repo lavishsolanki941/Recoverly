@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
-import { PlayCircle, TimerReset } from "lucide-react";
+import { CheckCircle2, PlayCircle, TimerReset } from "lucide-react";
 import { Card, CardDescription, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { fetcher, FetchError } from "@/lib/fetcher";
@@ -35,6 +35,14 @@ async function postJson(url: string, body?: unknown) {
   return json;
 }
 
+function demoModeDisabledMessage(error: unknown) {
+  return error instanceof FetchError && error.status === 404
+    ? "Demo mode is disabled on this deployment (DEMO_MODE env var)."
+    : error instanceof Error
+      ? error.message
+      : "Something went wrong.";
+}
+
 export function DemoControls() {
   const { mutate } = useSWRConfig();
   const { data } = useSWR<SubscriptionsResponse>("/api/subscriptions?take=50", fetcher);
@@ -42,8 +50,10 @@ export function DemoControls() {
 
   const [subscriptionId, setSubscriptionId] = useState("");
   const [scenarioKey, setScenarioKey] = useState(DEMO_SCENARIOS[0].key);
+  const [forceDueNow, setForceDueNow] = useState(true);
   const [isSimulating, setIsSimulating] = useState(false);
   const [isRunningCron, setIsRunningCron] = useState(false);
+  const [isMarkingRecovered, setIsMarkingRecovered] = useState(false);
   const [message, setMessage] = useState<ActionMessage>(null);
 
   const activeSubscriptionId = subscriptionId || subscriptions[0]?.id || "";
@@ -59,20 +69,18 @@ export function DemoControls() {
       await postJson("/api/demo/simulate-failure", {
         subscriptionId: activeSubscriptionId,
         errorCode: scenarioKey,
+        forceDueNow,
       });
       const scenario = DEMO_SCENARIOS.find((s) => s.key === scenarioKey);
-      setMessage({ tone: "success", text: `Simulated "${scenario?.label}" — dashboard updating.` });
+      setMessage({
+        tone: "success",
+        text: forceDueNow
+          ? `Simulated "${scenario?.label}" — due now, ready for "Run cron now".`
+          : `Simulated "${scenario?.label}" — dashboard updating.`,
+      });
       await mutate("/api/forecast");
     } catch (error) {
-      setMessage({
-        tone: "error",
-        text:
-          error instanceof FetchError && error.status === 404
-            ? "Demo mode is disabled on this deployment (DEMO_MODE env var)."
-            : error instanceof Error
-              ? error.message
-              : "Failed to simulate the failure.",
-      });
+      setMessage({ tone: "error", text: demoModeDisabledMessage(error) });
     } finally {
       setIsSimulating(false);
     }
@@ -98,12 +106,41 @@ export function DemoControls() {
     }
   }
 
+  async function handleMarkRecovered() {
+    if (!activeSubscriptionId) {
+      setMessage({ tone: "error", text: "No subscription selected." });
+      return;
+    }
+    setIsMarkingRecovered(true);
+    setMessage(null);
+    try {
+      const result = await postJson("/api/demo/simulate-recovery", {
+        subscriptionId: activeSubscriptionId,
+      });
+      setMessage({
+        tone: "success",
+        text: `Marked recovered — ${formatRupees(result.recoveredAmount)} added to the recovered total.`,
+      });
+      await mutate("/api/forecast");
+    } catch (error) {
+      setMessage({
+        tone: "error",
+        text:
+          error instanceof FetchError && error.status === 404 && error.message.startsWith("No in-flight")
+            ? "No in-flight retry for this subscription yet — simulate a failure and run the cron first."
+            : demoModeDisabledMessage(error),
+      });
+    } finally {
+      setIsMarkingRecovered(false);
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Demo controls</CardTitle>
         <CardDescription>
-          Manufacture a failed payment or force the retry cron to run right now.
+          Manufacture a failed payment, force the retry cron to run, or mark the retry as recovered.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
@@ -139,6 +176,16 @@ export function DemoControls() {
             </select>
           </label>
 
+          <label className="flex h-8 items-center gap-1.5 text-xs text-muted-foreground">
+            <input
+              type="checkbox"
+              className="size-3.5"
+              checked={forceDueNow}
+              onChange={(e) => setForceDueNow(e.target.checked)}
+            />
+            Force due now
+          </label>
+
           <Button
             variant="outline"
             size="sm"
@@ -152,6 +199,16 @@ export function DemoControls() {
           <Button variant="outline" size="sm" onClick={handleRunCron} disabled={isRunningCron}>
             <TimerReset className="size-3.5" />
             {isRunningCron ? "Running…" : "Run cron now"}
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleMarkRecovered}
+            disabled={isMarkingRecovered || !activeSubscriptionId}
+          >
+            <CheckCircle2 className="size-3.5" />
+            {isMarkingRecovered ? "Marking…" : "Mark recovered"}
           </Button>
         </div>
 
