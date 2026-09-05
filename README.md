@@ -4,14 +4,14 @@ AI-powered revenue recovery for Razorpay merchants. Built for the Razorpay Build
 
 ## What it does
 
-When a subscription payment fails on Razorpay, Recoverly reads *why* it failed, schedules a smarter retry based on that reason, executes the retry automatically, and shows the merchant a live dashboard of recovered revenue and a cashflow forecast. AI (Google Gemini) writes the plain-English explanation for each retry decision — all money-critical timing logic is deterministic rule code, never the model.
+When a subscription payment fails on Razorpay, Recoverly reads *why* it failed, schedules a smarter retry based on that reason, executes the retry automatically, and shows the merchant a live dashboard of recovered revenue and a cashflow forecast. AI (Google Gemini) writes the plain-English explanation for each retry decision all money-critical timing logic is deterministic rule code, never the model.
 
 ## Tech stack
 
 - Next.js (App Router) + TypeScript + Tailwind CSS + shadcn/ui
 - PostgreSQL (Neon) via Prisma
 - Razorpay Node SDK (test mode) — Orders, Subscriptions, Payment Links, Webhooks
-- Google Gemini (`@google/genai`, `gemini-2.5-flash`) for explanation text
+- Google Gemini (`@google/genai`, `gemini-flash-lite-latest`) for explanation text
 - NextAuth (single demo account)
 - Vercel Cron for scheduled retries
 
