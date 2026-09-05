@@ -147,13 +147,17 @@ export function DemoControls() {
         <label className="flex flex-col gap-1 text-xs text-muted-foreground">
           Subscription
           <select
-            className="h-8 min-w-48 rounded-md border border-input bg-transparent px-2 text-sm text-foreground"
+            className="h-8 min-w-48 rounded-md border border-input bg-card px-2 text-sm text-foreground [color-scheme:dark] [accent-color:var(--brand)]"
             value={activeSubscriptionId}
             onChange={(e) => setSubscriptionId(e.target.value)}
           >
-            {subscriptions.length === 0 && <option value="">No subscriptions yet</option>}
+            {subscriptions.length === 0 && (
+              <option value="" className="bg-card text-foreground">
+                No subscriptions yet
+              </option>
+            )}
             {subscriptions.map((s) => (
-              <option key={s.id} value={s.id}>
+              <option key={s.id} value={s.id} className="bg-card text-foreground">
                 {s.subscriber.name} — {formatRupees(s.amount / 100)}
               </option>
             ))}
@@ -163,12 +167,12 @@ export function DemoControls() {
         <label className="flex flex-col gap-1 text-xs text-muted-foreground">
           Failure scenario
           <select
-            className="h-8 min-w-48 rounded-md border border-input bg-transparent px-2 text-sm text-foreground"
+            className="h-8 min-w-48 rounded-md border border-input bg-card px-2 text-sm text-foreground [color-scheme:dark] [accent-color:var(--brand)]"
             value={scenarioKey}
             onChange={(e) => setScenarioKey(e.target.value)}
           >
             {DEMO_SCENARIOS.map((s) => (
-              <option key={s.key} value={s.key}>
+              <option key={s.key} value={s.key} className="bg-card text-foreground">
                 {s.label}
               </option>
             ))}

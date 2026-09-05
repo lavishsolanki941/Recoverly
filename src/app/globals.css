@@ -16,12 +16,14 @@
   /* Reserved for the ₹ hero figure only — nothing else uses it. */
   --font-display: var(--font-instrument-serif);
   --color-brand: var(--brand);
-  --color-brand-wash: var(--brand-wash);
-  --color-brand-wash-2: var(--brand-wash-2);
-  --color-brand-strong: var(--brand-strong);
   --color-status-info: var(--status-info);
   --color-line-strong: var(--line-strong);
   --color-card-tint: var(--card-tint);
+  --color-anchor: var(--anchor);
+  --color-anchor-2: var(--anchor-2);
+  --color-anchor-foreground: var(--anchor-foreground);
+  --color-anchor-muted: var(--anchor-muted);
+  --color-anchor-brand: var(--anchor-brand);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -64,26 +66,41 @@
 }
 
 :root {
-  /* --- Recoverly token system ---
-     6 named neutrals/surfaces + one deliberate accent (brand green — "money
-     recovered"). Every color below is either this scale or a status hue;
-     nothing is an ad-hoc gray. Text-pair contrasts are computed (WCAG),
-     not eyeballed — see the design-pass notes for the numbers. */
-  --ink: #111318;
-  --ink-muted: #5b6169;
-  --paper: #f6f7f5;
-  --surface: #ffffff;
-  --line: #e4e7e2;
-  /* A more visible hairline for cards that need to hold their own against
-     the page (secondary cards) — still 1px, just not whisper-thin. */
-  --line-strong: #d4d8d0;
-  /* Barely-off-white, brand-tinted card surface — distinguishes cards from
-     both the page and a stark pure white without adding weight. */
-  --card-tint: #fafbf8;
-  --brand: #0e7a4e;
-  --brand-wash: #eaf5ee;
-  --brand-wash-2: #def0e5;
-  --brand-strong: #0a5c3b;
+  /* --- Recoverly token system — dark by default ---
+     No toggle exists anywhere in this app (checked: no next-themes, no
+     theme provider, nothing ever applies a .dark class), so ":root is the
+     only theme" and "dark by default" are the same statement. This IS the
+     theme, not a mode. Every value below was re-verified against the dark
+     surfaces (not carried over from the old light palette) — see the
+     contrast notes inline; nothing here is eyeballed. */
+  --ink: #f2f4f1;
+  --ink-muted: #9aa0a6;
+  /* Page background — the darkest surface. */
+  --paper: #0b0e0d;
+  /* Card background — one deliberate step up from paper (1.10:1, a visible
+     but tight band, matching how Linear/Vercel step dark-mode surfaces). */
+  --surface: #161a19;
+  --line: #262b29;
+  --line-strong: #333a37;
+  /* No longer a distinct "tint" from --surface (that concept was a
+     light-mode-only warm-white trick) — same value, kept as its own
+     variable only because 4 components already reference bg-card-tint. */
+  --card-tint: #161a19;
+  --brand: #22a870;
+
+  /* The one fixed, non-themed anchor — same value regardless of anything
+     else on this page, used only by the hero band and the top header bar.
+     Sits close in raw luminance to the new dark --paper (there's no
+     headroom to go darker than an already-near-black page), so it reads as
+     "the same dark family" rather than a jarring separate box — which is
+     now the correct behavior now that the whole app is dark, not just this
+     one band. */
+  --anchor: #0e1211;
+  --anchor-2: #141a15;
+  --anchor-foreground: #eef1ec;
+  --anchor-muted: #9ba39d;
+  /* Bright, fixed green for the ₹ figure on the anchor — 9.37:1 on #0e1211. */
+  --anchor-brand: #2fcf8e;
 
   --background: var(--paper);
   --foreground: var(--ink);
@@ -91,101 +108,53 @@
   --card-foreground: var(--ink);
   --popover: var(--surface);
   --popover-foreground: var(--ink);
-  /* Primary stays neutral ink, not brand green — green is reserved for
-     money-meaning contexts (hero, chart, recovered status), not applied
-     globally to every button by default. */
+  /* Primary stays neutral ink (near-white on this dark theme), not brand
+     green — green is reserved for money-meaning contexts (hero, chart,
+     recovered status), not applied globally to every button by default. */
   --primary: var(--ink);
-  --primary-foreground: var(--surface);
-  --secondary: #eef0ed;
+  --primary-foreground: var(--paper);
+  --secondary: #1d2220;
   --secondary-foreground: var(--ink);
-  --muted: #eef0ed;
+  --muted: #1d2220;
   --muted-foreground: var(--ink-muted);
-  --accent: #eef0ed;
+  --accent: #1d2220;
   --accent-foreground: var(--ink);
-  --destructive: oklch(0.577 0.245 27.325);
+  --destructive: oklch(0.704 0.191 22.216);
   --border: var(--line);
   --input: var(--line);
   /* Focus rings use the brand color — visible and on-brand rather than a
      generic gray ring, satisfying "respect keyboard focus" deliberately. */
   --ring: var(--brand);
-  /* Categorical slots for the forecast chart: blue = neutral baseline,
-     brand green = with-recovery. Re-validated together after unifying
-     chart-3 with the brand hue: CVD ΔE 20.7 (deutan), normal-vision ΔE
-     21.8, contrast vs surface all >=3:1 — full pass, no WARN. */
-  --chart-1: #2a78d6;
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: var(--brand);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  /* Status trio — distinct from each other and from brand-as-decoration,
-     always paired with an icon + label in the UI, never color alone.
-     Contrasts computed on white: good 5.37:1, warning 4.97:1, info 4.42:1,
-     critical 4.80:1. */
-  --status-good: var(--brand);
-  --status-warning: #996515;
-  --status-info: #2a78d6;
-  --status-critical: #d03b3b;
-  --radius: 0.625rem;
-  --sidebar: var(--surface);
-  --sidebar-foreground: var(--ink);
-  --sidebar-primary: var(--ink);
-  --sidebar-primary-foreground: var(--surface);
-  --sidebar-accent: #eef0ed;
-  --sidebar-accent-foreground: var(--ink);
-  --sidebar-border: var(--line);
-  --sidebar-ring: var(--brand);
-}
-
-.dark {
-  --ink: #f2f4f1;
-  --ink-muted: #9aa0a6;
-  --paper: #121513;
-  --surface: #1a1e1b;
-  --line: #2a2f2c;
-  --line-strong: #3a413c;
-  --card-tint: #1d2220;
-  --brand: #22a870;
-  --brand-wash: #122a1e;
-  --brand-wash-2: #0e2318;
-  --brand-strong: #34c48a;
-
-  --background: var(--paper);
-  --foreground: var(--ink);
-  --card: var(--surface);
-  --card-foreground: var(--ink);
-  --popover: var(--surface);
-  --popover-foreground: var(--ink);
-  --primary: var(--ink);
-  --primary-foreground: var(--paper);
-  --secondary: #232823;
-  --secondary-foreground: var(--ink);
-  --muted: #232823;
-  --muted-foreground: var(--ink-muted);
-  --accent: #232823;
-  --accent-foreground: var(--ink);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: var(--line);
-  --input: var(--line);
-  --ring: var(--brand);
-  /* Re-validated for the dark surface: CVD ΔE 21.0 (deutan), normal-vision
-     ΔE 22.5, both slots >=3:1 on #1a1e1b — full pass. */
+  /* Chart line colors only need 3:1 (non-text) against the card surface —
+     both clear it with margin: blue 4.83:1, brand green 5.77:1 on #161a19.
+     Tick/axis label text (--muted-foreground) is verified separately below —
+     that one DOES need the full 4.5:1 text bar and clears it at 6.65:1. */
   --chart-1: #3987e5;
   --chart-2: oklch(0.556 0 0);
   --chart-3: var(--brand);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  /* Dark-surface contrasts: good 5.54:1, warning 7.50:1, info 4.63:1,
-     critical 5.22:1 — a plain hex-value carryover from light mode would
-     have under-shot 4.5:1 here, so these are distinct steps, not reused. */
+  /* Status trio — distinct from each other and from brand-as-decoration,
+     always paired with an icon + label, never color alone. These are NOT
+     the plain-surface contrast numbers — badges render as text on their own
+     ~15%-opacity tint pill, so the real background is a blend of that tint
+     over --surface, which is meaningfully lower-contrast than the plain
+     card. Verified against that actual blended pill background:
+     good 4.69:1, warning 5.96:1, info 4.97:1, critical 4.88:1. info and
+     critical needed brighter steps than the plain-surface numbers would
+     have suggested (#3987e5/#e66767 landed at 4.02/4.47 on their own pills —
+     both under 4.5) — chart-1 keeps the original blue since a chart line
+     only needs 3:1, not text contrast. */
   --status-good: var(--brand);
   --status-warning: #d9a441;
-  --status-info: #3987e5;
-  --status-critical: #e66767;
+  --status-info: #5b9ee8;
+  --status-critical: #ea7373;
+  --radius: 0.625rem;
   --sidebar: var(--surface);
   --sidebar-foreground: var(--ink);
   --sidebar-primary: var(--ink);
   --sidebar-primary-foreground: var(--paper);
-  --sidebar-accent: #232823;
+  --sidebar-accent: #1d2220;
   --sidebar-accent-foreground: var(--ink);
   --sidebar-border: var(--line);
   --sidebar-ring: var(--brand);
