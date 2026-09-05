@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { executeRetry } from "@/services/retry-executor";
 import { RetryStatus } from "@/generated/prisma/enums";
@@ -76,14 +77,9 @@ async function processRetries() {
 }
 
 async function handle(request: NextRequest) {
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) {
-    console.error("CRON_SECRET is not set");
-    return NextResponse.json({ error: "Cron endpoint not configured" }, { status: 500 });
-  }
-
-  // Two accepted credentials for the same job, because Vercel Cron and a
-  // manual/external trigger authenticate differently:
+  // Three accepted credentials for the same job, because Vercel Cron, an
+  // external scheduler, and the dashboard's "Run cron now" button all
+  // authenticate differently:
   // - Vercel Cron always calls via GET and sets `Authorization: Bearer
   //   <CRON_SECRET>` itself from the project's CRON_SECRET env var — this is
   //   Vercel's documented convention, not something this route controls.
@@ -92,10 +88,20 @@ async function handle(request: NextRequest) {
   // - `x-cron-secret` supports POST from an external scheduler (e.g. a
   //   GitHub Actions cron, or a service like cron-job.org) that can hit this
   //   endpoint every 15 minutes on a free Vercel plan.
+  // - A logged-in merchant session lets the dashboard call this endpoint
+  //   directly from the browser without ever exposing CRON_SECRET to the
+  //   client.
+  const session = await auth();
+  const authorizedBySession = Boolean(session?.user);
+
+  const cronSecret = process.env.CRON_SECRET;
   const authHeader = request.headers.get("authorization");
   const cronSecretHeader = request.headers.get("x-cron-secret");
-  const authorized = authHeader === `Bearer ${cronSecret}` || cronSecretHeader === cronSecret;
-  if (!authorized) {
+  const authorizedBySecret =
+    Boolean(cronSecret) && (authHeader === `Bearer ${cronSecret}` || cronSecretHeader === cronSecret);
+
+  if (!authorizedBySession && !authorizedBySecret) {
+    if (!cronSecret) console.error("CRON_SECRET is not set");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

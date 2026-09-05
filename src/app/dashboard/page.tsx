@@ -1,11 +1,6 @@
 import { auth, signOut } from "@/auth";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { DashboardContent } from "@/components/dashboard/dashboard-content";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -32,15 +27,7 @@ export default async function DashboardPage() {
           </form>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>No data yet</CardTitle>
-            <CardDescription>
-              Once webhooks start flowing, at-risk subscriptions, retry
-              activity, and the cashflow forecast will show up here.
-            </CardDescription>
-          </CardHeader>
-        </Card>
+        <DashboardContent />
       </div>
     </main>
   );

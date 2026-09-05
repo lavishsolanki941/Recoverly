@@ -106,3 +106,8 @@ export function scheduleRetry(
     scheduledFor,
   };
 }
+
+/** The attempt budget for a category — e.g. for surfacing "attempt N of M" to a human or the AI explainer. */
+export function getMaxAttempts(category: FailureCategory): number {
+  return RETRY_POLICY[category].maxAttempts;
+}

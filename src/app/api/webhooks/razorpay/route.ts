@@ -3,13 +3,17 @@ import Razorpay from "razorpay";
 import { prisma } from "@/lib/prisma";
 import { razorpay } from "@/lib/razorpay";
 import { Prisma } from "@/generated/prisma/client";
-import { PaymentStatus, RetryStatus } from "@/generated/prisma/enums";
-import { classifyFailure, scheduleRetry } from "@/services/retry-scheduler";
+import { processPaymentEvent } from "@/services/process-payment-event";
 
 // The events this endpoint currently acts on. Subscription lifecycle events
 // (subscription.charged/pending/halted/...) are intentionally out of scope
 // for now — this phase only turns payment.* events into Payment rows.
 const HANDLED_EVENTS = new Set(["payment.captured", "payment.failed"]);
+
+// The response to Razorpay itself returns in well under this — the extra
+// headroom is for the deferred after() callback (the Gemini explanation
+// call), which runs after that response is already sent.
+export const maxDuration = 30;
 
 interface RazorpayPaymentEntity {
   id: string;
@@ -130,80 +134,15 @@ async function handlePaymentEvent(payload: RazorpayWebhookPayload) {
   });
   if (!subscription) return;
 
-  const status: PaymentStatus =
-    payload.event === "payment.captured" ? PaymentStatus.CAPTURED : PaymentStatus.FAILED;
-  const now = new Date();
-
-  const errorFields = {
+  await processPaymentEvent({
+    subscriptionId: subscription.id,
+    eventType: payload.event === "payment.captured" ? "payment.captured" : "payment.failed",
+    razorpayPaymentId: payment.id,
+    razorpayOrderId: payment.order_id,
+    amount: payment.amount,
+    currency: payment.currency,
     errorCode: payment.error_code,
     errorDescription: payment.error_description,
     errorReason: payment.error_reason,
-  };
-
-  const paymentRecord = await prisma.payment.upsert({
-    where: { razorpayPaymentId: payment.id },
-    update: {
-      status,
-      ...errorFields,
-      capturedAt: status === PaymentStatus.CAPTURED ? now : undefined,
-      failedAt: status === PaymentStatus.FAILED ? now : undefined,
-    },
-    create: {
-      subscriptionId: subscription.id,
-      razorpayPaymentId: payment.id,
-      razorpayOrderId: payment.order_id,
-      amount: payment.amount,
-      currency: payment.currency,
-      status,
-      ...errorFields,
-      capturedAt: status === PaymentStatus.CAPTURED ? now : null,
-      failedAt: status === PaymentStatus.FAILED ? now : null,
-    },
-  });
-
-  if (status === PaymentStatus.FAILED) {
-    await scheduleRetryForFailedPayment(subscription.id, paymentRecord.id, errorFields);
-  }
-}
-
-async function scheduleRetryForFailedPayment(
-  subscriptionId: string,
-  paymentId: string,
-  errorFields: { errorCode: string | null; errorDescription: string | null; errorReason: string | null }
-) {
-  // attemptNumber counts retries for the *current* billing-cycle failure
-  // streak — attempts made since the subscription's last successful charge
-  // — so a subscription with old, already-recovered failures doesn't start
-  // a new failure at an inflated attempt number.
-  const lastCaptured = await prisma.payment.findFirst({
-    where: { subscriptionId, status: PaymentStatus.CAPTURED },
-    orderBy: { createdAt: "desc" },
-  });
-  const priorAttempts = await prisma.retryAttempt.count({
-    where: {
-      payment: {
-        subscriptionId,
-        ...(lastCaptured ? { createdAt: { gt: lastCaptured.createdAt } } : {}),
-      },
-    },
-  });
-
-  const plan = scheduleRetry(errorFields, priorAttempts + 1);
-
-  await prisma.payment.update({
-    where: { id: paymentId },
-    data: { failureCategory: plan?.category ?? classifyFailure(errorFields) },
-  });
-
-  if (!plan) return;
-
-  await prisma.retryAttempt.create({
-    data: {
-      paymentId,
-      attemptNumber: priorAttempts + 1,
-      strategy: plan.strategy,
-      status: RetryStatus.PENDING,
-      scheduledFor: plan.scheduledFor,
-    },
   });
 }
