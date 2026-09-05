@@ -37,7 +37,7 @@ export function AtRiskList({ data, isLoading, error, onRetry }: AtRiskListProps)
             {data.map((item) => {
               const badge = item.retry ? retryStatusBadge(item.retry.status) : null;
               return (
-                <li key={item.subscriptionId} className="flex items-center justify-between gap-4 py-3">
+                <li key={item.paymentId} className="flex items-center justify-between gap-4 py-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{item.subscriberName}</p>
                     <p className="truncate text-xs text-muted-foreground">{item.subscriberEmail}</p>

@@ -17,6 +17,10 @@ export interface ForecastPoint {
 
 export interface AtRiskSubscription {
   subscriptionId: string;
+  // A subscription can have more than one failed payment with an active
+  // retry at once (e.g. two separate billing cycles both still in-flight),
+  // so subscriptionId alone isn't unique across this list — paymentId is.
+  paymentId: string;
   subscriberName: string;
   subscriberEmail: string;
   amount: number;
@@ -172,6 +176,7 @@ async function computeAtRisk(): Promise<AtRiskSubscription[]> {
     const retry = payment.retryAttempts[0];
     return {
       subscriptionId: payment.subscription.id,
+      paymentId: payment.id,
       subscriberName: payment.subscription.subscriber.name,
       subscriberEmail: payment.subscription.subscriber.email,
       amount: paiseToRupees(payment.amount),
